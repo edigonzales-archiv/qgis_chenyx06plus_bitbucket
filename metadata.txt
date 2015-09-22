@@ -1,0 +1,39 @@
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=CHENyx06+
+qgisMinimumVersion=2.10
+description=CHENyx06+
+version=0.1
+author=Stefan Ziegler
+email=stefan.ziegler@bd.so.ch
+
+about=about about about
+
+tracker=https://bitbucket.org/edigonzales/qgis_chenyx06plus/issues?status=new&status=open
+repository=https://bitbucket.org/edigonzales/qgis_chenyx06plus
+# End of mandatory metadata
+
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=chenyx06
+
+homepage=https://bitbucket.org/edigonzales/qgis_chenyx06plus
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
