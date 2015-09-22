@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/CHENyx06plus" >
+    <qresource prefix="/plugins/chenyx06plus" >
         <file>icon.png</file>
     </qresource>
 </RCC>
