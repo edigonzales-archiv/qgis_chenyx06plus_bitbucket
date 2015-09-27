@@ -46,7 +46,7 @@ PY_FILES = \
 	__init__.py \
 	chenyx06plus.py chenyx06plus_dialog.py
 
-UI_FILES = chenyx06plus_dialog_base.ui
+UI_FILES = chenyx06plus_dialog_base.ui Ui_settings.ui
 
 EXTRAS = metadata.txt icon.png
 

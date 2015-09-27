@@ -22,10 +22,13 @@
 """
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from qgis.core import *
+from qgis.gui import *
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
 from chenyx06plus_dialog import CHENyx06plusDialog
+from settings_dialog import SettingsDialog
 import os.path
 
 
@@ -42,6 +45,9 @@ class CHENyx06plus:
         """
         # Save reference to the QGIS interface
         self.iface = iface
+        # QGIS map canvas
+        self.canvas = self.iface.mapCanvas()
+
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
@@ -58,15 +64,111 @@ class CHENyx06plus:
             if qVersion() > '4.3.3':
                 QCoreApplication.installTranslator(self.translator)
 
-        # Create the dialog (after translation) and keep reference
-        self.dlg = CHENyx06plusDialog()
+        self.settings = QSettings("CatAIS","CHENyx06plus")
 
-        # Declare instance attributes
-        self.actions = []
-        #self.menu = self.tr(u'&CHENyx06+')
-        # TODO: We are going to let the user set this up in a future iteration
-        #self.toolbar = self.iface.addToolBar(u'CHENyx06plus')
-        #self.toolbar.setObjectName(u'CHENyx06plus')
+    def initGui(self):
+        """Create the menu entries and toolbar icons inside the QGIS GUI."""
+        self.menu = QMenu()
+        self.menu.setTitle(self.tr("CHENyx06+"))
+
+        self.projects_menu = QMenu(self.tr("Projects"))
+        self.change_settings = QAction(self.tr("Settings"), self.iface.mainWindow())
+
+        self.menu.addMenu(self.projects_menu)
+        self.menu.addSeparator()
+        self.menu.addAction(self.change_settings)
+
+        menubar = self.iface.mainWindow().menuBar()
+        actions = menubar.actions()
+        last_action = actions[len(actions) - 1]
+        menubar.insertMenu(last_action, self.menu)
+
+        self.change_settings.triggered.connect(self.do_change_settings)
+
+        # Load existing projects into projects menu.
+        self.do_load_projects_database()
+
+
+    # TODO: Connect to add/change geometrie/attributes signals of projects layer.
+    # -> update menu and everythin else.
+
+
+    def do_load_projects_database(self):
+        # After changing the projects database we need to update the
+        # the menu and clear the existing entries.
+        # But the 'manage project' action is always available.
+        self.projects_menu.clear()
+        self.manage_projects = QAction(self.tr("Manage projects"), self.iface.mainWindow())
+        self.manage_projects.triggered.connect(self.do_manage_projects)
+        self.projects_menu.addAction(self.manage_projects)
+        self.projects_menu.addSeparator()
+
+        projects_database = self.settings.value("options/general/projects_database")
+        layer = QgsVectorLayer(projects_database, self.tr("Projects"), "ogr")
+
+        # TODO: better exception handling.
+        if not layer.isValid():
+            print "Layer failed to load!"
+            return
+
+        if layer.featureCount() == 0:
+            return
+
+        project_names = []
+        iter = layer.getFeatures()
+        for feature in iter:
+            project_name = feature.attribute("gemeinde")
+            project_names.append(project_name)
+
+        project_names.sort()
+        for project_name in project_names:
+            action = QAction(unicode(project_name), self.iface.mainWindow())
+            self.projects_menu.addAction(action)
+            # TODO: connect to signal...
+
+        del layer
+
+    def do_change_settings(self):
+        dlg_settings = SettingsDialog()
+        dlg_settings.show()
+        dlg_settings.projectsDatabaseHasChanged.connect(self.do_load_projects_database)
+        result = dlg_settings.exec_()
+
+    def do_manage_projects(self):
+        projects_database = self.settings.value("options/general/projects_database")
+
+        # Do not load projects database if it's already there.
+        root = QgsProject.instance().layerTreeRoot()
+        for node in root.findLayers():
+            if node.layer().type() == QgsMapLayer.VectorLayer:
+                if node.layer().source() == projects_database:
+                    node.setVisible(Qt.Checked)
+                    self.zoom_to_layer(node.layer())
+                    return
+
+        # Load projects database (=GeoPackage) into map canvas.
+        layer = self.iface.addVectorLayer(projects_database, self.tr("Projects"), "ogr")
+
+        if not layer.isValid():
+            print "Layer failed to load!"
+            return
+
+        layer_node = root.findLayer(layer.id())
+        if layer_node:
+            layer_node.setVisible(Qt.Checked)
+
+        # Zoom to layer extent.
+        self.zoom_to_layer(layer)
+
+    def zoom_to_layer(self, layer):
+        rect = layer.extent()
+        rect.scale(1.2)
+        self.canvas.setExtent(rect)
+        self.canvas.refresh()
+
+    def unload(self):
+        """Removes the plugin menu item and icon from QGIS GUI."""
+        pass
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -82,39 +184,3 @@ class CHENyx06plus:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('CHENyx06plus', message)
-
-
-    def initGui(self):
-        """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
-
-        self.menu = QMenu()
-        self.menu.setTitle(self.tr("CHENyx06+"))
-
-        self.load_chenyx06 = QAction(self.tr("Load CHENyx06 data"), self.iface.mainWindow())
-        self.menu.addAction(self.load_chenyx06)
-
-        menubar = self.iface.mainWindow().menuBar()
-        actions = menubar.actions()
-        last_action = actions[len(actions) - 1]
-        menubar.insertMenu(last_action, self.menu)
-
-
-
-
-    def unload(self):
-        """Removes the plugin menu item and icon from QGIS GUI."""
-        pass
-
-
-    def run(self):
-        """Run method that performs all the real work"""
-        # show the dialog
-        self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
