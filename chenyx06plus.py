@@ -86,7 +86,7 @@ class CHENyx06plus:
         self.change_settings.triggered.connect(self.do_change_settings)
 
         # Load existing projects into projects menu.
-        self.add_projects_to_menu()
+        self.do_add_projects_to_menu()
 
 
     # TODO: Connect to add/change geometrie/attributes signals of projects layer.
@@ -97,7 +97,7 @@ class CHENyx06plus:
 
     # TODO: aktives projekt wählen.
 
-    def add_projects_to_menu(self):
+    def do_add_projects_to_menu(self):
         # After changing the projects database we need to update the
         # the menu and clear the existing entries.
         # But the 'manage project' action is always available.
