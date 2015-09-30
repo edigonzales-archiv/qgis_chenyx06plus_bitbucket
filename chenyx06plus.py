@@ -86,14 +86,18 @@ class CHENyx06plus:
         self.change_settings.triggered.connect(self.do_change_settings)
 
         # Load existing projects into projects menu.
-        self.do_load_projects_database()
+        self.add_projects_to_menu()
 
 
     # TODO: Connect to add/change geometrie/attributes signals of projects layer.
     # -> update menu and everythin else.
 
 
-    def do_load_projects_database(self):
+    # TODO: wahrscheinlich suchen ob project layer geladen ist und signale anhängen.
+
+    # TODO: aktives projekt wählen.
+
+    def add_projects_to_menu(self):
         # After changing the projects database we need to update the
         # the menu and clear the existing entries.
         # But the 'manage project' action is always available.
@@ -137,17 +141,17 @@ class CHENyx06plus:
     def do_manage_projects(self):
         projects_database = self.settings.value("options/general/projects_database")
 
-        # Do not load projects database if it's already there.
+        # Do not load projects database (layer) if it's already there.
+        found = False
         root = QgsProject.instance().layerTreeRoot()
         for node in root.findLayers():
             if node.layer().type() == QgsMapLayer.VectorLayer:
                 if node.layer().source() == projects_database:
                     node.setVisible(Qt.Checked)
-                    self.zoom_to_layer(node.layer())
-                    return
+                    layer = node.layer()
 
-        # Load projects database (=GeoPackage) into map canvas.
-        layer = self.iface.addVectorLayer(projects_database, self.tr("Projects"), "ogr")
+        if not layer:
+            layer = self.iface.addVectorLayer(projects_database, self.tr("Projects"), "ogr")
 
         if not layer.isValid():
             print "Layer failed to load!"
@@ -159,6 +163,12 @@ class CHENyx06plus:
 
         # Zoom to layer extent.
         self.zoom_to_layer(layer)
+
+        # Connect to signal for the case somethings changed in the layer.
+        layer.editingStopped.connect(self.projects_layer_modified)
+
+    def projects_layer_modified(self):
+        print "fffffuuuuubar"
 
     def zoom_to_layer(self, layer):
         rect = layer.extent()
